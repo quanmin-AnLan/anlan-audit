@@ -1,0 +1,24 @@
+{
+  "extends": "../anlan-base/shared/child/tsconfig.app.json",
+  "compilerOptions": {
+    "paths": {
+      "@/*": ["./src/*"],
+      "@shared/*": ["../anlan-base/shared/*"],
+      "vue": ["../anlan-base/node_modules/vue"],
+      "vue-router": ["../anlan-base/node_modules/vue-router"],
+      "pinia": ["../anlan-base/node_modules/pinia"],
+      "axios": ["../anlan-base/node_modules/axios"],
+      "element-plus": ["../anlan-base/node_modules/element-plus"],
+      "element-plus/*": ["../anlan-base/node_modules/element-plus/*"],
+      "@element-plus/icons-vue": ["../anlan-base/node_modules/@element-plus/icons-vue"]
+    }
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.vue",
+    "env.d.ts",
+    "../anlan-base/shared/**/*.ts",
+    "../anlan-base/shared/**/*.vue"
+  ],
+  "exclude": ["../anlan-base/shared/*.example.ts", "../anlan-base/shared/vite-*.ts"]
+}

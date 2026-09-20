@@ -1,0 +1,4 @@
+{
+  "extends": "../anlan-base/shared/child/tsconfig.node.json",
+  "include": ["vite.config.ts"]
+}

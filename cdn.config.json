@@ -1,0 +1,8 @@
+{
+  "appName": "anlan-audit",
+  "cdnOrigin": "https://assets.anlan.xyz",
+  "devPort": 7104,
+  "activeRule": "/audit",
+  "title": "内容审核",
+  "icon": "View"
+}
