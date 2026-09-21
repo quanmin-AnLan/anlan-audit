@@ -8,7 +8,7 @@
     "dev": "vite",
     "build": "vue-tsc -b && vite build",
     "upload:cdn": "node upload-cdn.js",
-    "deploy:cdn": "npm run build && npm run upload:cdn",
+    "deploy:cdn": "npm run build && npm run upload:cdn --",
     "typecheck": "node ../anlan-base/scripts/check-scss-setup.mjs && vue-tsc -b --noEmit"
   },
   "peerDependencies": {
