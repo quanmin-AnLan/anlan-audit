@@ -96,7 +96,7 @@ onMounted(load)
   <div class="page-card">
     <div class="page-toolbar">
       <h3>审核搜索</h3>
-      <el-button @click="router.push('/audit/hub/article')">返回工作台</el-button>
+      <el-button @click="router.push('/audit/article')">返回文章审核</el-button>
     </div>
 
     <el-form :inline="true" class="search-form" @submit.prevent="load">

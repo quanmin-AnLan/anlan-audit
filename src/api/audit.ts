@@ -1,5 +1,7 @@
 import { http } from '@shared/child/request'
 
+export type ChannelLevel = 'PRIMARY' | 'SECONDARY'
+
 export interface AuditChannel {
   id: string
   code: string
@@ -7,10 +9,9 @@ export interface AuditChannel {
   description: string | null
   enabled: boolean
   sort: number
-  level?: string
+  level: ChannelLevel
   parentId?: string | null
-  domain?: string | null
-  groupName?: string | null
+  parentName?: string | null
 }
 
 export interface KeywordRule {
@@ -37,9 +38,9 @@ export interface HubGroup {
   channels: HubChannel[]
 }
 
-export interface HubData {
-  domain: string
-  routeName: string
+export interface ReviewBoardData {
+  businessLine: string
+  businessLineName: string
   groups: HubGroup[]
 }
 
@@ -77,6 +78,7 @@ export interface ReviewTask {
   submittedAt: string
   resolvedAt?: string | null
   channels: { id: string; code: string; name: string }[]
+  businessLine?: string
   hubDomain?: string
   channelId?: string
   articleUrl?: string | null
@@ -103,18 +105,23 @@ export interface SearchParams {
 }
 
 export const auditApi = {
-  getHub: (domain: string) => http.get<HubData>(`/audit/hub/${domain}`),
-  claimTask: (channelId: string) =>
-    http.post<{ taskId: string; channelId: string }>(`/audit/channels/${channelId}/claim`),
+  getReviewBoard: (line: string) => http.get<ReviewBoardData>(`/audit/review/${line}`),
+  claimTask: (channelId: string, line: string) =>
+    http.post<{ taskId: string; channelId: string }>(
+      `/audit/channels/${channelId}/claim`,
+      {},
+      { params: { line } },
+    ),
   getWorkspace: (taskId: string, channelId?: string) =>
     http.get<ReviewTask>(`/audit/tasks/${taskId}/workspace`, {
       params: channelId ? { channelId } : undefined,
     }),
   cancel: (taskId: string) => http.post(`/audit/tasks/${taskId}/cancel`),
   complete: (taskId: string) => http.post(`/audit/tasks/${taskId}/complete`),
-  completeNext: (taskId: string, channelId: string) =>
+  completeNext: (taskId: string, channelId: string, businessLine: string) =>
     http.post<{ hasNext: boolean; nextTaskId?: string }>(`/audit/tasks/${taskId}/complete-next`, {
       channelId,
+      businessLine,
     }),
   reject: (taskId: string, reason: string) =>
     http.post(`/audit/tasks/${taskId}/reject`, { reason }),
@@ -127,8 +134,13 @@ export const auditApi = {
     http.post(`/audit/tasks/${taskId}/verdict`, { action: action.toUpperCase(), reason }),
 
   listChannels: () => http.get<AuditChannel[]>('/audit/channels'),
-  createChannel: (data: { code: string; name: string; description?: string; parentId?: string }) =>
-    http.post<AuditChannel>('/audit/channels', data),
+  createChannel: (data: {
+    code: string
+    name: string
+    description?: string
+    level: ChannelLevel
+    parentId?: string
+  }) => http.post<AuditChannel>('/audit/channels', data),
   updateChannel: (id: string, data: Partial<AuditChannel>) =>
     http.patch<AuditChannel>(`/audit/channels/${id}`, data),
   deleteChannel: (id: string) => http.delete(`/audit/channels/${id}`),

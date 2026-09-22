@@ -15,7 +15,13 @@ const task = ref<ReviewTask | null>(null)
 const rejectReason = ref('')
 let lockTimer: ReturnType<typeof setTimeout> | null = null
 
-const hubPath = computed(() => `/audit/hub/${task.value?.hubDomain ?? 'article'}`)
+const reviewPath = computed(() => {
+  const line = task.value?.businessLine ?? task.value?.hubDomain ?? 'article'
+  return line === 'comment' ? '/audit/comment' : '/audit/article'
+})
+const businessLine = computed(
+  () => task.value?.businessLine ?? task.value?.hubDomain ?? 'article',
+)
 const articleLink = computed(() => task.value?.previewUrl || task.value?.articleUrl || '')
 const isComment = computed(() => task.value?.contentType === 'comment')
 
@@ -53,7 +59,7 @@ async function onLockExpired() {
     confirmButtonText: '返回工作台',
     type: 'warning',
   })
-  router.replace(hubPath.value)
+  router.replace(reviewPath.value)
 }
 
 async function load() {
@@ -70,7 +76,7 @@ async function load() {
         '无法继续',
         { type: 'warning' },
       )
-      router.replace(hubPath.value)
+      router.replace(reviewPath.value)
     }
   } finally {
     loading.value = false
@@ -81,7 +87,7 @@ async function cancelReview() {
   acting.value = true
   try {
     await auditApi.cancel(taskId.value)
-    router.replace(hubPath.value)
+    router.replace(reviewPath.value)
   } finally {
     acting.value = false
   }
@@ -92,7 +98,7 @@ async function complete() {
   try {
     await auditApi.complete(taskId.value)
     getElMessage().success('已完成')
-    router.replace(hubPath.value)
+    router.replace(reviewPath.value)
   } finally {
     acting.value = false
   }
@@ -101,13 +107,13 @@ async function complete() {
 async function completeNext() {
   acting.value = true
   try {
-    const res = await auditApi.completeNext(taskId.value, channelId.value)
+    const res = await auditApi.completeNext(taskId.value, channelId.value, businessLine.value)
     getElMessage().success('已完成')
     clearLockTimer()
     if (res.hasNext && res.nextTaskId) {
       router.replace(`/audit/workspace/${channelId.value}/${res.nextTaskId}`)
     } else {
-      router.replace(hubPath.value)
+      router.replace(reviewPath.value)
     }
   } finally {
     acting.value = false
@@ -124,7 +130,7 @@ async function reject() {
   try {
     await auditApi.reject(taskId.value, rejectReason.value.trim())
     getElMessage().success('已驳回')
-    router.replace(hubPath.value)
+    router.replace(reviewPath.value)
   } finally {
     acting.value = false
   }
@@ -140,7 +146,7 @@ onBeforeUnmount(clearLockTimer)
 
 <template>
   <div v-loading="loading" class="page-card workspace">
-    <el-button text @click="goBack">← 返回{{ task?.hubDomain === 'comment' ? '评论' : '文章' }}工作台</el-button>
+    <el-button text @click="goBack">← 返回{{ businessLine === 'comment' ? '评论' : '文章' }}审核</el-button>
 
     <template v-if="task">
       <div class="head">

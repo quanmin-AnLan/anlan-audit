@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { auditApi, type HubData } from '@/api/audit'
+import { auditApi, type ReviewBoardData } from '@/api/audit'
 import { getElMessage } from '@shared/child/element-plus'
 import { usePermission } from '@shared/child/permission'
 
@@ -9,17 +9,17 @@ const route = useRoute()
 const router = useRouter()
 const { hasPermission } = usePermission()
 const loading = ref(false)
-const hub = ref<HubData | null>(null)
+const board = ref<ReviewBoardData | null>(null)
 
-const domain = computed(() => route.params.domain as string)
-const l1Label = computed(() => (domain.value === 'comment' ? '评论' : '文章'))
+const businessLine = computed(() => (route.meta.businessLine as string) ?? 'article')
+const lineLabel = computed(() => (businessLine.value === 'comment' ? '评论' : '文章'))
 const canArticle = computed(() => hasPermission('article:review:read'))
 const canComment = computed(() => hasPermission('article:comment:moderate'))
 
 async function load() {
   loading.value = true
   try {
-    hub.value = await auditApi.getHub(domain.value)
+    board.value = await auditApi.getReviewBoard(businessLine.value)
   } finally {
     loading.value = false
   }
@@ -28,7 +28,7 @@ async function load() {
 async function openChannel(channelId: string) {
   loading.value = true
   try {
-    const { taskId } = await auditApi.claimTask(channelId)
+    const { taskId } = await auditApi.claimTask(channelId, businessLine.value)
     router.push(`/audit/workspace/${channelId}/${taskId}`)
   } catch {
     getElMessage().info('该通道暂无待审项')
@@ -41,13 +41,13 @@ function goSearch() {
   router.push('/audit/search')
 }
 
-function switchDomain(target: string) {
-  if (target !== domain.value) {
-    router.push(`/audit/hub/${target}`)
+function switchLine(target: string) {
+  if (target !== businessLine.value) {
+    router.push(target === 'comment' ? '/audit/comment' : '/audit/article')
   }
 }
 
-watch(domain, load, { immediate: true })
+watch(businessLine, load, { immediate: true })
 onMounted(load)
 </script>
 
@@ -55,22 +55,22 @@ onMounted(load)
   <div v-loading="loading" class="page-card hub-page">
     <div class="page-toolbar">
       <div>
-        <p class="level-hint">一级通道</p>
-        <h3>{{ l1Label }}审核</h3>
+        <p class="level-hint">业务线</p>
+        <h3>{{ lineLabel }}审核</h3>
       </div>
       <div class="page-toolbar__actions">
         <el-button-group v-if="canArticle || canComment">
           <el-button
             v-if="canArticle"
-            :type="domain === 'article' ? 'primary' : 'default'"
-            @click="switchDomain('article')"
+            :type="businessLine === 'article' ? 'primary' : 'default'"
+            @click="switchLine('article')"
           >
             文章
           </el-button>
           <el-button
             v-if="canComment"
-            :type="domain === 'comment' ? 'primary' : 'default'"
-            @click="switchDomain('comment')"
+            :type="businessLine === 'comment' ? 'primary' : 'default'"
+            @click="switchLine('comment')"
           >
             评论
           </el-button>
@@ -81,11 +81,11 @@ onMounted(load)
       </div>
     </div>
 
-    <template v-for="group in hub?.groups ?? []" :key="group.id">
+    <template v-for="group in board?.groups ?? []" :key="group.id">
       <el-card shadow="never" class="group-card">
         <template #header>
           <div class="group-header">
-            <el-tag size="small" type="warning" effect="plain">二级通道</el-tag>
+            <el-tag size="small" type="warning" effect="plain">一级通道</el-tag>
             <span class="group-name">{{ group.name }}</span>
           </div>
         </template>
@@ -98,17 +98,17 @@ onMounted(load)
             @click="openChannel(ch.id)"
           >
             <div class="leaf-main">
-              <el-tag size="small" type="info" effect="plain">三级</el-tag>
+              <el-tag size="small" type="info" effect="plain">二级</el-tag>
               <span class="leaf-name">{{ ch.name }}</span>
             </div>
             <el-badge :value="ch.pendingCount" :max="999" :hidden="ch.pendingCount === 0" />
           </div>
         </div>
-        <el-empty v-else description="该二级通道下暂无三级通道" :image-size="48" />
+        <el-empty v-else description="该一级通道下暂无二级通道" :image-size="48" />
       </el-card>
     </template>
 
-    <el-empty v-if="!loading && !(hub?.groups?.length)" description="暂无可用二级通道" />
+    <el-empty v-if="!loading && !(board?.groups?.length)" description="暂无可用一级通道" />
   </div>
 </template>
 
