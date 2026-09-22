@@ -28,6 +28,7 @@ onMounted(load)
     <div class="page-toolbar">
       <h3>审核工作台</h3>
       <div class="page-toolbar__actions">
+        <el-button @click="router.push('/audit/comments')">评论审核</el-button>
         <el-button @click="router.push('/audit/channels')">通道配置</el-button>
       </div>
     </div>
