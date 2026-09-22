@@ -50,7 +50,13 @@ onMounted(load)
     </div>
 
     <el-table v-loading="loading" :data="list" stripe class="desktop-only">
-      <el-table-column prop="name" label="名称" />
+      <el-table-column prop="name" label="三级通道" />
+      <el-table-column prop="groupName" label="所属二级" width="120" />
+      <el-table-column prop="domain" label="一级" width="80">
+        <template #default="{ row }">
+          {{ (row as AuditChannel).domain === 'COMMENT' ? '评论' : '文章' }}
+        </template>
+      </el-table-column>
       <el-table-column prop="code" label="编码" width="140" />
       <el-table-column prop="enabled" label="状态" width="90">
         <template #default="{ row }">

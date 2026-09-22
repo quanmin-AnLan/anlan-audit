@@ -12,7 +12,6 @@ export const routes: RouteRecordRaw[] = [
   { path: '/audit/search', component: SearchView },
   { path: '/audit/channels', component: ChannelsView },
   { path: '/audit/channels/:channelId/rules', component: RulesView },
-  // 旧路由兼容
   { path: '/audit/queues', redirect: '/audit/hub/article' },
   { path: '/audit/comments', redirect: '/audit/hub/comment' },
   { path: '/audit/queues/:channelId', redirect: '/audit/hub/article' },

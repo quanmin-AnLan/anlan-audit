@@ -10,6 +10,7 @@ export interface AuditChannel {
   level?: string
   parentId?: string | null
   domain?: string | null
+  groupName?: string | null
 }
 
 export interface KeywordRule {
