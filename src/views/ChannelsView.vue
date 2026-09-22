@@ -44,7 +44,7 @@ onMounted(load)
     <div class="page-toolbar">
       <h3>审核通道</h3>
       <div class="page-toolbar__actions">
-        <el-button @click="router.push('/audit/queues')">工作台</el-button>
+        <el-button @click="router.push('/audit/hub/article')">工作台</el-button>
         <el-button type="primary" @click="dialogVisible = true">新建通道</el-button>
       </div>
     </div>
