@@ -1,6 +1,7 @@
 import { http } from '@shared/child/request'
 
 export type ChannelLevel = 'PRIMARY' | 'SECONDARY'
+export type BusinessLineType = 'ARTICLE' | 'COMMENT'
 
 export interface AuditChannel {
   id: string
@@ -10,6 +11,8 @@ export interface AuditChannel {
   enabled: boolean
   sort: number
   level: ChannelLevel
+  grade?: number
+  businessLine?: BusinessLineType | null
   parentId?: string | null
   parentName?: string | null
 }
@@ -35,6 +38,8 @@ export interface HubChannel {
 export interface HubGroup {
   id: string
   name: string
+  grade: number
+  businessLine: string | null
   channels: HubChannel[]
 }
 
@@ -140,6 +145,8 @@ export const auditApi = {
     description?: string
     level: ChannelLevel
     parentId?: string
+    grade?: number
+    businessLine?: BusinessLineType | null
   }) => http.post<AuditChannel>('/audit/channels', data),
   updateChannel: (id: string, data: Partial<AuditChannel>) =>
     http.patch<AuditChannel>(`/audit/channels/${id}`, data),

@@ -16,6 +16,18 @@ const lineLabel = computed(() => (businessLine.value === 'comment' ? '评论' : 
 const canArticle = computed(() => hasPermission('article:review:read'))
 const canComment = computed(() => hasPermission('article:comment:moderate'))
 
+function gradeTagType(grade: number) {
+  if (grade >= 3) return 'danger'
+  if (grade >= 2) return 'warning'
+  return 'info'
+}
+
+function businessLineLabel(line: string | null) {
+  if (line === 'article') return '文章'
+  if (line === 'comment') return '评论'
+  return null
+}
+
 async function load() {
   loading.value = true
   try {
@@ -86,7 +98,18 @@ onMounted(load)
         <template #header>
           <div class="group-header">
             <el-tag size="small" type="warning" effect="plain">一级通道</el-tag>
+            <el-tag size="small" :type="gradeTagType(group.grade)" effect="dark">
+              L{{ group.grade }}
+            </el-tag>
             <span class="group-name">{{ group.name }}</span>
+            <el-tag
+              v-if="businessLineLabel(group.businessLine)"
+              size="small"
+              type="info"
+              effect="plain"
+            >
+              {{ businessLineLabel(group.businessLine) }}
+            </el-tag>
           </div>
         </template>
 
