@@ -78,6 +78,14 @@ export interface ReviewTask {
   authorId?: string | null
   authorName?: string | null
   authorTitle?: string | null
+  authorDisplayTitle?: string | null
+  authorDisplayRank?: string | null
+  authorPrimaryRole?: {
+    code: string
+    ministryCode: string | null
+    category: string
+    rankOrder: number
+  } | null
   status: string
   hits: AuditHit[]
   submittedAt: string
