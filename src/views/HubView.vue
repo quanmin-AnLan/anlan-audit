@@ -117,7 +117,7 @@ onMounted(load)
           <div
             v-for="ch in group.channels"
             :key="ch.id"
-            class="leaf-row"
+            class="leaf-row inset-panel inset-panel--interactive"
             @click="openChannel(ch.id)"
           >
             <div class="leaf-main">
@@ -176,16 +176,7 @@ onMounted(load)
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 12px 14px;
-    border: 1px solid #ebeef5;
-    border-radius: 8px;
     cursor: pointer;
-    transition: border-color 0.2s, box-shadow 0.2s;
-
-    &:hover {
-      border-color: $primary-color;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-    }
   }
 
   .leaf-main {

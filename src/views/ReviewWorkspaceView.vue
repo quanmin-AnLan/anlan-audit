@@ -204,8 +204,8 @@ onBeforeUnmount(clearLockTimer)
         </li>
       </ul>
 
-      <el-card v-if="task.actions?.length" shadow="never" class="action-log">
-        <template #header>审核操作记录</template>
+      <section v-if="task.actions?.length" class="page-section action-log">
+        <h3>审核操作记录</h3>
         <el-timeline>
           <el-timeline-item
             v-for="a in task.actions"
@@ -218,7 +218,7 @@ onBeforeUnmount(clearLockTimer)
             <span v-if="a.reason" class="reason">理由：{{ a.reason }}</span>
           </el-timeline-item>
         </el-timeline>
-      </el-card>
+      </section>
 
       <div v-if="!isComment && articleLink" class="preview-wrap">
         <iframe :src="articleLink" class="preview-frame" title="文章预览" />
@@ -278,7 +278,9 @@ onBeforeUnmount(clearLockTimer)
   }
 
   .action-log {
-    margin-bottom: 16px;
+    h3 {
+      font-size: 15px;
+    }
 
     .reason {
       color: #909399;
@@ -288,7 +290,7 @@ onBeforeUnmount(clearLockTimer)
 
   .preview-wrap {
     margin-bottom: 16px;
-    border: 1px solid #ebeef5;
+    border: 1px solid $border-color;
     border-radius: 8px;
     overflow: hidden;
   }
