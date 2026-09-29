@@ -9,6 +9,7 @@ export const routes: RouteRecordRaw[] = [
   { path: '/audit', redirect: '/audit/article' },
   { path: '/audit/article', component: HubView, meta: { businessLine: 'article' } },
   { path: '/audit/comment', component: HubView, meta: { businessLine: 'comment' } },
+  { path: '/audit/dm', component: HubView, meta: { businessLine: 'dm' } },
   { path: '/audit/workspace/:channelId/:taskId', component: ReviewWorkspaceView },
   { path: '/audit/search', component: SearchView },
   { path: '/audit/channels', component: ChannelsView },

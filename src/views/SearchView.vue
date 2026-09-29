@@ -8,6 +8,7 @@ import MobileDataCards from '@shared/components/MobileDataCards.vue'
 const router = useRouter()
 const loading = ref(false)
 const list = ref<ReviewTask[]>([])
+const articleMatches = ref<Array<{ id: string; authorId: string; title: string; status: string }>>([])
 const total = ref(0)
 
 const query = reactive({
@@ -47,6 +48,7 @@ async function load() {
       pageSize: query.pageSize,
     })
     list.value = res.items
+    articleMatches.value = res.articles ?? []
     total.value = res.total
   } finally {
     loading.value = false
@@ -151,6 +153,15 @@ onMounted(load)
       </el-form-item>
     </el-form>
 
+    <h4 v-if="articleMatches.length" class="section-title">未入审队列的文章（{{ articleMatches.length }}）</h4>
+    <el-table v-if="articleMatches.length" :data="articleMatches" stripe class="desktop-only article-match-table">
+      <el-table-column prop="id" label="文章 ID" width="200" show-overflow-tooltip />
+      <el-table-column prop="title" label="标题" min-width="160" />
+      <el-table-column prop="status" label="状态" width="100" />
+      <el-table-column prop="authorId" label="作者 ID" width="200" show-overflow-tooltip />
+    </el-table>
+
+    <h4 class="section-title">审核任务</h4>
     <el-table v-loading="loading" :data="list" stripe class="desktop-only">
       <el-table-column prop="contentType" label="类型" width="72">
         <template #default="{ row }">{{ row.contentType === 'comment' ? '评论' : '文章' }}</template>
@@ -225,6 +236,13 @@ onMounted(load)
 </template>
 
 <style scoped lang="scss">
+.section-title {
+  margin: 16px 0 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: $text-primary;
+}
+
 .search-form {
   margin-bottom: 16px;
 }

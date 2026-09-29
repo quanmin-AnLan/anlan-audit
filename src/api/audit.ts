@@ -1,7 +1,7 @@
 import { http } from '@shared/child/request'
 
 export type ChannelLevel = 'PRIMARY' | 'SECONDARY'
-export type BusinessLineType = 'ARTICLE' | 'COMMENT'
+export type BusinessLineType = 'ARTICLE' | 'COMMENT' | 'DM'
 
 export interface AuditChannel {
   id: string
@@ -139,10 +139,13 @@ export const auditApi = {
   reject: (taskId: string, reason: string) =>
     http.post(`/audit/tasks/${taskId}/reject`, { reason }),
   search: (params: SearchParams) =>
-    http.get<{ items: ReviewTask[]; total: number; page: number; pageSize: number }>(
-      '/audit/search',
-      { params },
-    ),
+    http.get<{
+      items: ReviewTask[]
+      articles: Array<{ id: string; authorId: string; title: string; status: string }>
+      total: number
+      page: number
+      pageSize: number
+    }>('/audit/search', { params }),
   changeVerdict: (taskId: string, action: 'approve' | 'reject', reason?: string) =>
     http.post(`/audit/tasks/${taskId}/verdict`, { action: action.toUpperCase(), reason }),
 

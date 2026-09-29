@@ -18,13 +18,22 @@ let lockTimer: ReturnType<typeof setTimeout> | null = null
 
 const reviewPath = computed(() => {
   const line = task.value?.businessLine ?? task.value?.hubDomain ?? 'article'
-  return line === 'comment' ? '/audit/comment' : '/audit/article'
+  if (line === 'comment') return '/audit/comment'
+  if (line === 'dm') return '/audit/dm'
+  return '/audit/article'
 })
 const businessLine = computed(
   () => task.value?.businessLine ?? task.value?.hubDomain ?? 'article',
 )
 const articleLink = computed(() => task.value?.previewUrl || task.value?.articleUrl || '')
 const isComment = computed(() => task.value?.contentType === 'comment')
+const isDm = computed(() => task.value?.contentType === 'dm')
+
+const backLineLabel = computed(() => {
+  if (businessLine.value === 'comment') return '评论'
+  if (businessLine.value === 'dm') return '私信'
+  return '文章'
+})
 
 const authorTitleText = computed(() => {
   const t = task.value
@@ -159,11 +168,12 @@ onBeforeUnmount(clearLockTimer)
 
 <template>
   <div v-loading="loading" class="page-card workspace">
-    <el-button text @click="goBack">← 返回{{ businessLine === 'comment' ? '评论' : '文章' }}审核</el-button>
+    <el-button text @click="goBack">← 返回{{ backLineLabel }}审核</el-button>
 
     <template v-if="task">
       <div class="head">
         <h3 v-if="isComment">评论审核</h3>
+        <h3 v-else-if="isDm">私信审核</h3>
         <h3 v-else>
           <a v-if="articleLink" :href="articleLink" target="_blank" rel="noopener" class="title-link">
             {{ task.articleTitle || '未命名文章' }}
@@ -174,9 +184,9 @@ onBeforeUnmount(clearLockTimer)
 
       <el-descriptions :column="2" border size="small" class="meta">
         <el-descriptions-item label="类型">
-          {{ isComment ? '评论' : '文章' }}
+          {{ isComment ? '评论' : isDm ? '私信' : '文章' }}
         </el-descriptions-item>
-        <el-descriptions-item label="文章 ID">{{ task.articleId }}</el-descriptions-item>
+        <el-descriptions-item :label="isDm ? '消息 ID' : '文章 ID'">{{ task.articleId }}</el-descriptions-item>
         <el-descriptions-item label="作者">{{ task.authorName || '—' }}</el-descriptions-item>
         <el-descriptions-item label="官职">
           <span v-if="authorTitleText" class="title-badge" :style="authorTitleBadgeStyle">
@@ -187,7 +197,7 @@ onBeforeUnmount(clearLockTimer)
         <el-descriptions-item label="时间" :span="2">
           {{ task.contentAt ? new Date(task.contentAt).toLocaleString() : '—' }}
         </el-descriptions-item>
-        <el-descriptions-item v-if="isComment" label="评论内容" :span="2">
+        <el-descriptions-item v-if="isComment || isDm" :label="isDm ? '私信内容' : '评论内容'" :span="2">
           {{ task.commentContent }}
         </el-descriptions-item>
         <el-descriptions-item label="命中通道" :span="2">
@@ -220,7 +230,7 @@ onBeforeUnmount(clearLockTimer)
         </el-timeline>
       </section>
 
-      <div v-if="!isComment && articleLink" class="preview-wrap">
+      <div v-if="!isComment && !isDm && articleLink" class="preview-wrap">
         <iframe :src="articleLink" class="preview-frame" title="文章预览" />
       </div>
 

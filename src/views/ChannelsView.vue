@@ -39,11 +39,35 @@ const primaryOptions = computed(() =>
   list.value.filter((ch) => ch.level === 'PRIMARY' && ch.enabled),
 )
 
+const primaryChannels = computed(() =>
+  [...list.value.filter((ch) => ch.level === 'PRIMARY')].sort((a, b) => a.sort - b.sort),
+)
+
+function secondaryChannels(parentId: string) {
+  return list.value
+    .filter((ch) => ch.level === 'SECONDARY' && ch.parentId === parentId)
+    .sort((a, b) => a.sort - b.sort)
+}
+
+const expandedPrimaryIds = ref<string[]>([])
+
+function togglePrimary(id: string) {
+  const set = new Set(expandedPrimaryIds.value)
+  if (set.has(id)) set.delete(id)
+  else set.add(id)
+  expandedPrimaryIds.value = [...set]
+}
+
+function isPrimaryExpanded(id: string) {
+  return expandedPrimaryIds.value.includes(id)
+}
+
 const levelLabel = (level: ChannelLevel) => (level === 'PRIMARY' ? '一级' : '二级')
 
 const businessLineLabel = (line?: BusinessLineType | null) => {
   if (line === 'ARTICLE') return '文章'
   if (line === 'COMMENT') return '评论'
+  if (line === 'DM') return '私信'
   return '全部'
 }
 
@@ -59,6 +83,7 @@ async function load() {
   loading.value = true
   try {
     list.value = await auditApi.listChannels()
+    expandedPrimaryIds.value = primaryChannels.value.map((ch) => ch.id)
   } finally {
     loading.value = false
   }
@@ -141,62 +166,50 @@ onMounted(load)
       </div>
     </div>
 
-    <el-table v-loading="loading" :data="list" stripe class="desktop-only" row-key="id">
-      <el-table-column prop="name" label="名称" min-width="140" />
-      <el-table-column label="层级" width="90">
-        <template #default="{ row }">
-          <el-tag size="small" :type="(row as AuditChannel).level === 'PRIMARY' ? 'warning' : 'info'">
-            {{ levelLabel((row as AuditChannel).level) }}
+    <div v-loading="loading" class="channel-tree desktop-only">
+      <div v-for="primary in primaryChannels" :key="primary.id" class="channel-tree__group">
+        <div class="channel-tree__primary" @click="togglePrimary(primary.id)">
+          <span class="channel-tree__caret" :class="{ 'is-expanded': isPrimaryExpanded(primary.id) }">▸</span>
+          <span class="channel-tree__primary-name">{{ primary.name }}</span>
+          <el-tag size="small" type="warning">一级</el-tag>
+          <el-tag size="small" :type="gradeTagType(primary.grade ?? 1)">
+            {{ gradeLabel(primary.grade ?? 1) }}
           </el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="等级" width="80">
-        <template #default="{ row }">
-          <el-tag
-            v-if="(row as AuditChannel).level === 'PRIMARY'"
-            size="small"
-            :type="gradeTagType((row as AuditChannel).grade ?? 1)"
-          >
-            {{ gradeLabel((row as AuditChannel).grade ?? 1) }}
+          <span class="channel-tree__meta">{{ businessLineLabel(primary.businessLine) }}</span>
+          <span class="channel-tree__code">{{ primary.code }}</span>
+          <el-tag :type="primary.enabled ? 'success' : 'info'" size="small">
+            {{ primary.enabled ? '启用' : '停用' }}
           </el-tag>
-          <span v-else>—</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="业务线" width="100">
-        <template #default="{ row }">
-          <template v-if="(row as AuditChannel).level === 'PRIMARY'">
-            {{ businessLineLabel((row as AuditChannel).businessLine) }}
-          </template>
-          <span v-else>—</span>
-        </template>
-      </el-table-column>
-      <el-table-column prop="parentName" label="所属一级" width="140">
-        <template #default="{ row }">
-          {{ (row as AuditChannel).parentName || '—' }}
-        </template>
-      </el-table-column>
-      <el-table-column prop="code" label="编码" width="160" />
-      <el-table-column prop="enabled" label="状态" width="90">
-        <template #default="{ row }">
-          <el-tag :type="(row as AuditChannel).enabled ? 'success' : 'info'" size="small">
-            {{ (row as AuditChannel).enabled ? '启用' : '停用' }}
-          </el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="操作" width="200">
-        <template #default="{ row }">
-          <el-button link type="primary" @click="openEdit(row as AuditChannel)">编辑</el-button>
-          <el-button
-            v-if="(row as AuditChannel).level === 'SECONDARY'"
-            link
-            type="primary"
-            @click="openRules((row as AuditChannel).id)"
-          >
-            关键词规则
-          </el-button>
-        </template>
-      </el-table-column>
-    </el-table>
+          <el-button link type="primary" @click.stop="openEdit(primary)">编辑</el-button>
+        </div>
+
+        <el-table
+          v-show="isPrimaryExpanded(primary.id)"
+          :data="secondaryChannels(primary.id)"
+          stripe
+          class="channel-tree__secondary-table"
+          empty-text="暂无二级通道"
+        >
+          <el-table-column prop="name" label="二级通道" min-width="160" />
+          <el-table-column prop="code" label="编码" width="180" />
+          <el-table-column prop="enabled" label="状态" width="90">
+            <template #default="{ row }">
+              <el-tag :type="(row as AuditChannel).enabled ? 'success' : 'info'" size="small">
+                {{ (row as AuditChannel).enabled ? '启用' : '停用' }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="200">
+            <template #default="{ row }">
+              <el-button link type="primary" @click="openEdit(row as AuditChannel)">编辑</el-button>
+              <el-button link type="primary" @click="openRules((row as AuditChannel).id)">
+                关键词规则
+              </el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+    </div>
 
     <MobileDataCards :items="list" :loading="loading" empty-text="暂无通道">
       <template #card="{ item }">
@@ -213,8 +226,8 @@ onMounted(load)
           <span class="mobile-data-card__label">业务线</span>
           <span class="mobile-data-card__value">{{ businessLineLabel(item.businessLine) }}</span>
         </div>
-        <div v-if="item.parentName" class="mobile-data-card__row">
-          <span class="mobile-data-card__label">所属一级</span>
+        <div v-if="item.level === 'SECONDARY' && item.parentName" class="mobile-data-card__row">
+          <span class="mobile-data-card__label">一级通道</span>
           <span class="mobile-data-card__value">{{ item.parentName }}</span>
         </div>
         <div class="mobile-data-card__row">
@@ -270,6 +283,7 @@ onMounted(load)
               <el-option label="全部业务线" value="" />
               <el-option label="文章" value="ARTICLE" />
               <el-option label="评论" value="COMMENT" />
+              <el-option label="私信" value="DM" />
             </el-select>
           </el-form-item>
         </template>
@@ -305,6 +319,7 @@ onMounted(load)
               <el-option label="全部业务线" value="" />
               <el-option label="文章" value="ARTICLE" />
               <el-option label="评论" value="COMMENT" />
+              <el-option label="私信" value="DM" />
             </el-select>
           </el-form-item>
         </template>
@@ -318,6 +333,49 @@ onMounted(load)
 </template>
 
 <style scoped lang="scss">
+.channel-tree__group {
+  margin-bottom: 12px;
+  border: 1px solid $border-color-light;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.channel-tree__primary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: $fill-color-light;
+  cursor: pointer;
+  user-select: none;
+}
+
+.channel-tree__caret {
+  display: inline-block;
+  transition: transform 0.15s ease;
+  color: $text-secondary;
+
+  &.is-expanded {
+    transform: rotate(90deg);
+  }
+}
+
+.channel-tree__primary-name {
+  font-weight: 600;
+  color: $text-primary;
+}
+
+.channel-tree__meta,
+.channel-tree__code {
+  font-size: 12px;
+  color: $text-secondary;
+}
+
+.channel-tree__secondary-table {
+  margin: 0;
+}
+
 .field-hint {
   display: block;
   margin-top: 4px;
