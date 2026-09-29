@@ -346,7 +346,7 @@ onMounted(load)
   align-items: center;
   gap: 8px;
   padding: 10px 12px;
-  background: $fill-color-light;
+  background: $bg-color;
   cursor: pointer;
   user-select: none;
 }
