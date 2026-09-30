@@ -154,7 +154,7 @@ onMounted(load)
   .level-hint {
     margin: 0 0 4px;
     font-size: 12px;
-    color: #909399;
+    color: var(--anlan-text-secondary, $text-secondary);
   }
 
   h3 {

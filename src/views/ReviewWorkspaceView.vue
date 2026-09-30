@@ -273,10 +273,10 @@ onBeforeUnmount(clearLockTimer)
   .hits {
     margin: 0 0 16px;
     padding-left: 18px;
-    color: #606266;
+    color: var(--anlan-text-regular, $text-regular);
 
     .snippet {
-      color: #909399;
+      color: var(--anlan-text-secondary, $text-secondary);
     }
   }
 
@@ -295,7 +295,7 @@ onBeforeUnmount(clearLockTimer)
     }
 
     .reason {
-      color: #909399;
+      color: var(--anlan-text-secondary, $text-secondary);
       margin-left: 8px;
     }
   }

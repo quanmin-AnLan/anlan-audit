@@ -45,6 +45,10 @@ function reviewText(row: ReviewTask) {
   return row.reviewContent ?? row.commentContent ?? row.articleTitle ?? '—'
 }
 
+function authorText(row: ReviewTask) {
+  return row.authorName?.trim() || '—'
+}
+
 async function load() {
   loading.value = true
   try {
@@ -85,7 +89,6 @@ function reset() {
 }
 
 async function changeVerdict(row: ReviewTask, action: 'approve' | 'reject') {
-  if (row.synthetic) return
   let reason: string | undefined
   if (action === 'reject') {
     const { value } = await getElMessageBox().prompt('请填写驳回理由', '改判驳回', {
@@ -125,8 +128,12 @@ onMounted(load)
       <el-form-item label="文章标题">
         <el-input v-model="query.articleTitle" clearable placeholder="模糊" />
       </el-form-item>
-      <el-form-item label="评论内容">
-        <el-input v-model="query.commentContent" clearable placeholder="模糊" />
+      <el-form-item label="内容关键词">
+        <el-input
+          v-model="query.commentContent"
+          clearable
+          placeholder="评论 / 私信正文模糊"
+        />
       </el-form-item>
       <el-form-item label="作者名">
         <el-input v-model="query.authorName" clearable placeholder="模糊" />
@@ -191,7 +198,9 @@ onMounted(load)
       <el-table-column label="入审内容" min-width="160" show-overflow-tooltip>
         <template #default="{ row }">{{ reviewText(row as ReviewTask) }}</template>
       </el-table-column>
-      <el-table-column prop="authorName" label="作者" width="100" />
+      <el-table-column label="作者" width="100">
+        <template #default="{ row }">{{ authorText(row as ReviewTask) }}</template>
+      </el-table-column>
       <el-table-column prop="status" label="状态" width="88">
         <template #default="{ row }">{{ statusLabel[(row as ReviewTask).status] ?? (row as ReviewTask).status }}</template>
       </el-table-column>
@@ -200,24 +209,22 @@ onMounted(load)
       </el-table-column>
       <el-table-column label="操作" width="160" fixed="right">
         <template #default="{ row }">
-          <template v-if="!(row as ReviewTask).synthetic">
-            <el-button
-              v-if="(row as ReviewTask).status === 'approved'"
-              link
-              type="danger"
-              @click="changeVerdict(row as ReviewTask, 'reject')"
-            >
-              改判驳回
-            </el-button>
-            <el-button
-              v-if="(row as ReviewTask).status === 'rejected'"
-              link
-              type="success"
-              @click="changeVerdict(row as ReviewTask, 'approve')"
-            >
-              改判通过
-            </el-button>
-          </template>
+          <el-button
+            v-if="(row as ReviewTask).status === 'approved'"
+            link
+            type="danger"
+            @click="changeVerdict(row as ReviewTask, 'reject')"
+          >
+            改判驳回
+          </el-button>
+          <el-button
+            v-if="(row as ReviewTask).status === 'rejected'"
+            link
+            type="success"
+            @click="changeVerdict(row as ReviewTask, 'approve')"
+          >
+            改判通过
+          </el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -225,15 +232,16 @@ onMounted(load)
     <MobileDataCards :items="list" :loading="loading" empty-text="暂无结果">
       <template #card="{ item }">
         <div>{{ lineLabel[item.contentType] ?? item.contentType }} · {{ statusLabel[item.status] }}</div>
+        <div class="review-meta">作者：{{ authorText(item as ReviewTask) }}</div>
         <el-button v-if="item.sceneUrl" link type="primary" @click="openAuditSceneUrl(item.sceneUrl)">
           {{ item.sceneLabel || item.articleTitle }}
         </el-button>
         <div v-else>{{ item.sceneLabel || item.articleTitle }}</div>
-        <div class="review-snippet">{{ item.reviewContent ?? item.commentContent }}</div>
+        <div class="review-snippet">{{ reviewText(item as ReviewTask) }}</div>
       </template>
       <template #actions="{ item }">
         <el-button
-          v-if="!item.synthetic && item.status === 'approved'"
+          v-if="item.status === 'approved'"
           size="small"
           type="danger"
           @click="changeVerdict(item as ReviewTask, 'reject')"
@@ -241,7 +249,7 @@ onMounted(load)
           改判驳回
         </el-button>
         <el-button
-          v-if="!item.synthetic && item.status === 'rejected'"
+          v-if="item.status === 'rejected'"
           size="small"
           type="success"
           @click="changeVerdict(item as ReviewTask, 'approve')"
@@ -270,7 +278,12 @@ onMounted(load)
 
 .range-sep {
   margin: 0 8px;
-  color: #909399;
+  color: var(--anlan-text-secondary, $text-secondary);
+}
+
+.review-meta {
+  font-size: 12px;
+  color: var(--anlan-text-secondary, $text-secondary);
 }
 
 .pager {
