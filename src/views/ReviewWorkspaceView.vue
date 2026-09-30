@@ -25,7 +25,9 @@ const reviewPath = computed(() => {
 const businessLine = computed(
   () => task.value?.businessLine ?? task.value?.hubDomain ?? 'article',
 )
-const articleLink = computed(() => task.value?.previewUrl || task.value?.articleUrl || '')
+const articleLink = computed(
+  () => task.value?.sceneUrl || task.value?.previewUrl || task.value?.articleUrl || '',
+)
 const isComment = computed(() => task.value?.contentType === 'comment')
 const isDm = computed(() => task.value?.contentType === 'dm')
 

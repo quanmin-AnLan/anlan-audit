@@ -3,12 +3,12 @@ import { onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { auditApi, type ReviewTask } from '@/api/audit'
 import { getElMessage, getElMessageBox } from '@shared/child/element-plus'
+import { openAuditSceneUrl } from '@shared/audit/open-scene'
 import MobileDataCards from '@shared/components/MobileDataCards.vue'
 
 const router = useRouter()
 const loading = ref(false)
 const list = ref<ReviewTask[]>([])
-const articleMatches = ref<Array<{ id: string; authorId: string; title: string; status: string }>>([])
 const total = ref(0)
 
 const query = reactive({
@@ -31,6 +31,20 @@ const statusLabel: Record<string, string> = {
   rejected: '已驳回',
 }
 
+const lineLabel: Record<string, string> = {
+  article: '文章',
+  comment: '评论',
+  dm: '私信',
+}
+
+function sceneText(row: ReviewTask) {
+  return row.sceneLabel || row.articleTitle || '—'
+}
+
+function reviewText(row: ReviewTask) {
+  return row.reviewContent ?? row.commentContent ?? row.articleTitle ?? '—'
+}
+
 async function load() {
   loading.value = true
   try {
@@ -48,7 +62,6 @@ async function load() {
       pageSize: query.pageSize,
     })
     list.value = res.items
-    articleMatches.value = res.articles ?? []
     total.value = res.total
   } finally {
     loading.value = false
@@ -72,6 +85,7 @@ function reset() {
 }
 
 async function changeVerdict(row: ReviewTask, action: 'approve' | 'reject') {
+  if (row.synthetic) return
   let reason: string | undefined
   if (action === 'reject') {
     const { value } = await getElMessageBox().prompt('请填写驳回理由', '改判驳回', {
@@ -117,10 +131,11 @@ onMounted(load)
       <el-form-item label="作者名">
         <el-input v-model="query.authorName" clearable placeholder="模糊" />
       </el-form-item>
-      <el-form-item label="类型">
+      <el-form-item label="业务线">
         <el-select v-model="query.contentType" clearable placeholder="全部" style="width: 120px">
           <el-option label="文章" value="ARTICLE" />
           <el-option label="评论" value="COMMENT" />
+          <el-option label="私信" value="DM" />
         </el-select>
       </el-form-item>
       <el-form-item label="状态">
@@ -153,59 +168,72 @@ onMounted(load)
       </el-form-item>
     </el-form>
 
-    <h4 v-if="articleMatches.length" class="section-title">未入审队列的文章（{{ articleMatches.length }}）</h4>
-    <el-table v-if="articleMatches.length" :data="articleMatches" stripe class="desktop-only article-match-table">
-      <el-table-column prop="id" label="文章 ID" width="200" show-overflow-tooltip />
-      <el-table-column prop="title" label="标题" min-width="160" />
-      <el-table-column prop="status" label="状态" width="100" />
-      <el-table-column prop="authorId" label="作者 ID" width="200" show-overflow-tooltip />
-    </el-table>
-
-    <h4 class="section-title">审核任务</h4>
     <el-table v-loading="loading" :data="list" stripe class="desktop-only">
-      <el-table-column prop="contentType" label="类型" width="72">
-        <template #default="{ row }">{{ row.contentType === 'comment' ? '评论' : '文章' }}</template>
+      <el-table-column label="业务线" width="80">
+        <template #default="{ row }">
+          {{ lineLabel[(row as ReviewTask).contentType] ?? (row as ReviewTask).contentType }}
+        </template>
       </el-table-column>
-      <el-table-column prop="articleTitle" label="文章" min-width="140" show-overflow-tooltip />
-      <el-table-column prop="commentContent" label="评论" min-width="120" show-overflow-tooltip />
+      <el-table-column label="场景" min-width="160" show-overflow-tooltip>
+        <template #default="{ row }">
+          <el-button
+            v-if="(row as ReviewTask).sceneUrl"
+            link
+            type="primary"
+            class="scene-link"
+            @click.stop="openAuditSceneUrl((row as ReviewTask).sceneUrl)"
+          >
+            {{ sceneText(row as ReviewTask) }}
+          </el-button>
+          <span v-else>{{ sceneText(row as ReviewTask) }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="入审内容" min-width="160" show-overflow-tooltip>
+        <template #default="{ row }">{{ reviewText(row as ReviewTask) }}</template>
+      </el-table-column>
       <el-table-column prop="authorName" label="作者" width="100" />
       <el-table-column prop="status" label="状态" width="88">
-        <template #default="{ row }">{{ statusLabel[row.status] ?? row.status }}</template>
+        <template #default="{ row }">{{ statusLabel[(row as ReviewTask).status] ?? (row as ReviewTask).status }}</template>
       </el-table-column>
       <el-table-column prop="submittedAt" label="提交时间" width="170">
-        <template #default="{ row }">{{ new Date(row.submittedAt).toLocaleString() }}</template>
+        <template #default="{ row }">{{ new Date((row as ReviewTask).submittedAt).toLocaleString() }}</template>
       </el-table-column>
       <el-table-column label="操作" width="160" fixed="right">
         <template #default="{ row }">
-          <el-button
-            v-if="row.status === 'approved'"
-            link
-            type="danger"
-            @click="changeVerdict(row as ReviewTask, 'reject')"
-          >
-            改判驳回
-          </el-button>
-          <el-button
-            v-if="row.status === 'rejected'"
-            link
-            type="success"
-            @click="changeVerdict(row as ReviewTask, 'approve')"
-          >
-            改判通过
-          </el-button>
+          <template v-if="!(row as ReviewTask).synthetic">
+            <el-button
+              v-if="(row as ReviewTask).status === 'approved'"
+              link
+              type="danger"
+              @click="changeVerdict(row as ReviewTask, 'reject')"
+            >
+              改判驳回
+            </el-button>
+            <el-button
+              v-if="(row as ReviewTask).status === 'rejected'"
+              link
+              type="success"
+              @click="changeVerdict(row as ReviewTask, 'approve')"
+            >
+              改判通过
+            </el-button>
+          </template>
         </template>
       </el-table-column>
     </el-table>
 
     <MobileDataCards :items="list" :loading="loading" empty-text="暂无结果">
       <template #card="{ item }">
-        <div>{{ item.contentType === 'comment' ? '评论' : '文章' }} · {{ statusLabel[item.status] }}</div>
-        <div>{{ item.articleTitle }}</div>
-        <div v-if="item.commentContent">{{ item.commentContent }}</div>
+        <div>{{ lineLabel[item.contentType] ?? item.contentType }} · {{ statusLabel[item.status] }}</div>
+        <el-button v-if="item.sceneUrl" link type="primary" @click="openAuditSceneUrl(item.sceneUrl)">
+          {{ item.sceneLabel || item.articleTitle }}
+        </el-button>
+        <div v-else>{{ item.sceneLabel || item.articleTitle }}</div>
+        <div class="review-snippet">{{ item.reviewContent ?? item.commentContent }}</div>
       </template>
       <template #actions="{ item }">
         <el-button
-          v-if="item.status === 'approved'"
+          v-if="!item.synthetic && item.status === 'approved'"
           size="small"
           type="danger"
           @click="changeVerdict(item as ReviewTask, 'reject')"
@@ -213,7 +241,7 @@ onMounted(load)
           改判驳回
         </el-button>
         <el-button
-          v-if="item.status === 'rejected'"
+          v-if="!item.synthetic && item.status === 'rejected'"
           size="small"
           type="success"
           @click="changeVerdict(item as ReviewTask, 'approve')"
@@ -236,13 +264,6 @@ onMounted(load)
 </template>
 
 <style scoped lang="scss">
-.section-title {
-  margin: 16px 0 8px;
-  font-size: 14px;
-  font-weight: 600;
-  color: $text-primary;
-}
-
 .search-form {
   margin-bottom: 16px;
 }
@@ -257,4 +278,14 @@ onMounted(load)
   justify-content: flex-end;
 }
 
+.scene-link {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.review-snippet {
+  font-size: 13px;
+  color: $text-secondary;
+}
 </style>

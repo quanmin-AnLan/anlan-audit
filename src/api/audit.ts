@@ -13,6 +13,7 @@ export interface AuditChannel {
   level: ChannelLevel
   grade?: number
   businessLine?: BusinessLineType | null
+  businessLines?: BusinessLineType[]
   parentId?: string | null
   parentName?: string | null
 }
@@ -95,6 +96,10 @@ export interface ReviewTask {
   hubDomain?: string
   channelId?: string
   articleUrl?: string | null
+  sceneLabel?: string
+  reviewContent?: string
+  sceneUrl?: string | null
+  synthetic?: boolean
   previewUrl?: string
   previewExpiresAt?: string
   contentAt?: string
@@ -141,11 +146,32 @@ export const auditApi = {
   search: (params: SearchParams) =>
     http.get<{
       items: ReviewTask[]
-      articles: Array<{ id: string; authorId: string; title: string; status: string }>
       total: number
       page: number
       pageSize: number
     }>('/audit/search', { params }),
+  getDmConversation: (threadId: string) =>
+    http.get<{
+      sceneLabel: string
+      messages: Array<{
+        id: string
+        senderName: string
+        body: string | null
+        withdrawn: boolean
+        createdAt: string
+      }>
+    }>(`/audit/conversations/dm/${encodeURIComponent(threadId)}`),
+  getGroupConversation: (groupId: string) =>
+    http.get<{
+      sceneLabel: string
+      messages: Array<{
+        id: string
+        senderName: string
+        body: string | null
+        withdrawn: boolean
+        createdAt: string
+      }>
+    }>(`/audit/conversations/group/${encodeURIComponent(groupId)}`),
   changeVerdict: (taskId: string, action: 'approve' | 'reject', reason?: string) =>
     http.post(`/audit/tasks/${taskId}/verdict`, { action: action.toUpperCase(), reason }),
 
@@ -158,6 +184,7 @@ export const auditApi = {
     parentId?: string
     grade?: number
     businessLine?: BusinessLineType | null
+    businessLines?: BusinessLineType[]
   }) => http.post<AuditChannel>('/audit/channels', data),
   updateChannel: (id: string, data: Partial<AuditChannel>) =>
     http.patch<AuditChannel>(`/audit/channels/${id}`, data),

@@ -24,14 +24,14 @@ const form = reactive({
   level: 'SECONDARY' as ChannelLevel,
   parentId: '',
   grade: 1,
-  businessLine: '' as '' | BusinessLineType,
+  businessLines: [] as BusinessLineType[],
 })
 const editForm = reactive({
   name: '',
   description: '',
   enabled: true,
   grade: 1,
-  businessLine: '' as '' | BusinessLineType,
+  businessLines: [] as BusinessLineType[],
 })
 const { isMobile } = useBreakpoint()
 
@@ -64,11 +64,20 @@ function isPrimaryExpanded(id: string) {
 
 const levelLabel = (level: ChannelLevel) => (level === 'PRIMARY' ? '一级' : '二级')
 
-const businessLineLabel = (line?: BusinessLineType | null) => {
+const lineName = (line: BusinessLineType) => {
   if (line === 'ARTICLE') return '文章'
   if (line === 'COMMENT') return '评论'
-  if (line === 'DM') return '私信'
-  return '全部'
+  return '私信'
+}
+
+const businessLineLabel = (ch: AuditChannel) => {
+  const lines = ch.businessLines?.length
+    ? ch.businessLines
+    : ch.businessLine
+      ? [ch.businessLine]
+      : []
+  if (!lines.length) return '全部'
+  return lines.map((l) => lineName(l)).join('、')
 }
 
 const gradeTagType = (grade: number) => {
@@ -96,7 +105,7 @@ function openCreate() {
   form.level = 'SECONDARY'
   form.parentId = primaryOptions.value[0]?.id ?? ''
   form.grade = 1
-  form.businessLine = ''
+  form.businessLines = []
   dialogVisible.value = true
 }
 
@@ -106,7 +115,11 @@ function openEdit(row: AuditChannel) {
   editForm.description = row.description ?? ''
   editForm.enabled = row.enabled
   editForm.grade = row.grade ?? 1
-  editForm.businessLine = row.businessLine ?? ''
+  editForm.businessLines = row.businessLines?.length
+    ? [...row.businessLines]
+    : row.businessLine
+      ? [row.businessLine]
+      : []
   editVisible.value = true
 }
 
@@ -122,10 +135,7 @@ async function create() {
     level: form.level,
     parentId: form.level === 'SECONDARY' ? form.parentId : undefined,
     grade: form.level === 'PRIMARY' ? form.grade : undefined,
-    businessLine:
-      form.level === 'PRIMARY'
-        ? form.businessLine || null
-        : undefined,
+    businessLines: form.level === 'PRIMARY' ? form.businessLines : undefined,
   })
   getElMessage().success('已创建')
   dialogVisible.value = false
@@ -141,7 +151,7 @@ async function saveEdit() {
   const row = list.value.find((ch) => ch.id === editingId.value)
   if (row?.level === 'PRIMARY') {
     payload.grade = editForm.grade
-    payload.businessLine = editForm.businessLine || null
+    payload.businessLines = editForm.businessLines
   }
   await auditApi.updateChannel(editingId.value, payload)
   getElMessage().success('已保存')
@@ -175,7 +185,7 @@ onMounted(load)
           <el-tag size="small" :type="gradeTagType(primary.grade ?? 1)">
             {{ gradeLabel(primary.grade ?? 1) }}
           </el-tag>
-          <span class="channel-tree__meta">{{ businessLineLabel(primary.businessLine) }}</span>
+          <span class="channel-tree__meta">{{ businessLineLabel(primary) }}</span>
           <span class="channel-tree__code">{{ primary.code }}</span>
           <el-tag :type="primary.enabled ? 'success' : 'info'" size="small">
             {{ primary.enabled ? '启用' : '停用' }}
@@ -224,7 +234,7 @@ onMounted(load)
         </div>
         <div v-if="item.level === 'PRIMARY'" class="mobile-data-card__row">
           <span class="mobile-data-card__label">业务线</span>
-          <span class="mobile-data-card__value">{{ businessLineLabel(item.businessLine) }}</span>
+          <span class="mobile-data-card__value">{{ businessLineLabel(item) }}</span>
         </div>
         <div v-if="item.level === 'SECONDARY' && item.parentName" class="mobile-data-card__row">
           <span class="mobile-data-card__label">一级通道</span>
@@ -279,8 +289,13 @@ onMounted(load)
             <span class="field-hint">数值越大优先级越高，命中多通道时取最高等级</span>
           </el-form-item>
           <el-form-item label="业务线">
-            <el-select v-model="form.businessLine" placeholder="全部业务线" clearable style="width: 100%">
-              <el-option label="全部业务线" value="" />
+            <el-select
+              v-model="form.businessLines"
+              multiple
+              collapse-tags
+              placeholder="不选表示全部业务线"
+              style="width: 100%"
+            >
               <el-option label="文章" value="ARTICLE" />
               <el-option label="评论" value="COMMENT" />
               <el-option label="私信" value="DM" />
@@ -315,8 +330,13 @@ onMounted(load)
             <el-input-number v-model="editForm.grade" :min="1" :max="9" />
           </el-form-item>
           <el-form-item label="业务线">
-            <el-select v-model="editForm.businessLine" placeholder="全部业务线" clearable style="width: 100%">
-              <el-option label="全部业务线" value="" />
+            <el-select
+              v-model="editForm.businessLines"
+              multiple
+              collapse-tags
+              placeholder="不选表示全部业务线"
+              style="width: 100%"
+            >
               <el-option label="文章" value="ARTICLE" />
               <el-option label="评论" value="COMMENT" />
               <el-option label="私信" value="DM" />

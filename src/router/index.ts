@@ -1,6 +1,7 @@
 import HubView from '@/views/HubView.vue'
 import ReviewWorkspaceView from '@/views/ReviewWorkspaceView.vue'
 import SearchView from '@/views/SearchView.vue'
+import ConversationAuditView from '@/views/ConversationAuditView.vue'
 import ChannelsView from '@/views/ChannelsView.vue'
 import RulesView from '@/views/RulesView.vue'
 import type { RouteRecordRaw } from 'vue-router'
@@ -12,6 +13,7 @@ export const routes: RouteRecordRaw[] = [
   { path: '/audit/dm', component: HubView, meta: { businessLine: 'dm' } },
   { path: '/audit/workspace/:channelId/:taskId', component: ReviewWorkspaceView },
   { path: '/audit/search', component: SearchView },
+  { path: '/audit/conversations/:kind/:id', component: ConversationAuditView },
   { path: '/audit/channels', component: ChannelsView },
   { path: '/audit/channels/:channelId/rules', component: RulesView },
   { path: '/audit/hub/:domain', redirect: (to) => `/audit/${to.params.domain}` },
