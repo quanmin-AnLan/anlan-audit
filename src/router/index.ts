@@ -11,6 +11,7 @@ export const routes: RouteRecordRaw[] = [
   { path: '/audit/article', component: HubView, meta: { businessLine: 'article' } },
   { path: '/audit/comment', component: HubView, meta: { businessLine: 'comment' } },
   { path: '/audit/dm', component: HubView, meta: { businessLine: 'dm' } },
+  { path: '/audit/renown', component: HubView, meta: { businessLine: 'renown' } },
   { path: '/audit/workspace/:channelId/:taskId', component: ReviewWorkspaceView },
   { path: '/audit/search', component: SearchView },
   { path: '/audit/conversations/:kind/:id', component: ConversationAuditView },

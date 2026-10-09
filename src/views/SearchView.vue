@@ -35,6 +35,8 @@ const lineLabel: Record<string, string> = {
   article: '文章',
   comment: '评论',
   dm: '私信',
+  renown: '名望',
+  RENOWN: '名望',
 }
 
 function sceneText(row: ReviewTask) {
@@ -143,6 +145,7 @@ onMounted(load)
           <el-option label="文章" value="ARTICLE" />
           <el-option label="评论" value="COMMENT" />
           <el-option label="私信" value="DM" />
+          <el-option label="名望" value="RENOWN" />
         </el-select>
       </el-form-item>
       <el-form-item label="状态">

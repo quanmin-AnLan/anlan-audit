@@ -20,6 +20,7 @@ const reviewPath = computed(() => {
   const line = task.value?.businessLine ?? task.value?.hubDomain ?? 'article'
   if (line === 'comment') return '/audit/comment'
   if (line === 'dm') return '/audit/dm'
+  if (line === 'renown') return '/audit/renown'
   return '/audit/article'
 })
 const businessLine = computed(
@@ -30,10 +31,12 @@ const articleLink = computed(
 )
 const isComment = computed(() => task.value?.contentType === 'comment')
 const isDm = computed(() => task.value?.contentType === 'dm')
+const isRenown = computed(() => task.value?.contentType === 'renown')
 
 const backLineLabel = computed(() => {
   if (businessLine.value === 'comment') return '评论'
   if (businessLine.value === 'dm') return '私信'
+  if (businessLine.value === 'renown') return '名望升阶'
   return '文章'
 })
 
@@ -176,6 +179,7 @@ onBeforeUnmount(clearLockTimer)
       <div class="head">
         <h3 v-if="isComment">评论审核</h3>
         <h3 v-else-if="isDm">私信审核</h3>
+        <h3 v-else-if="isRenown">{{ task.sceneLabel || '名望升阶' }}</h3>
         <h3 v-else>
           <a v-if="articleLink" :href="articleLink" target="_blank" rel="noopener" class="title-link">
             {{ task.articleTitle || '未命名文章' }}
@@ -186,9 +190,11 @@ onBeforeUnmount(clearLockTimer)
 
       <el-descriptions :column="2" border size="small" class="meta">
         <el-descriptions-item label="类型">
-          {{ isComment ? '评论' : isDm ? '私信' : '文章' }}
+          {{ isComment ? '评论' : isDm ? '私信' : isRenown ? '名望升阶' : '文章' }}
         </el-descriptions-item>
-        <el-descriptions-item :label="isDm ? '消息 ID' : '文章 ID'">{{ task.articleId }}</el-descriptions-item>
+        <el-descriptions-item :label="isRenown ? '申请 ID' : isDm ? '消息 ID' : '文章 ID'">{{
+          task.articleId
+        }}</el-descriptions-item>
         <el-descriptions-item label="作者">{{ task.authorName || '—' }}</el-descriptions-item>
         <el-descriptions-item label="官职">
           <span v-if="authorTitleText" class="title-badge" :style="authorTitleBadgeStyle">
@@ -199,8 +205,12 @@ onBeforeUnmount(clearLockTimer)
         <el-descriptions-item label="时间" :span="2">
           {{ task.contentAt ? new Date(task.contentAt).toLocaleString() : '—' }}
         </el-descriptions-item>
-        <el-descriptions-item v-if="isComment || isDm" :label="isDm ? '私信内容' : '评论内容'" :span="2">
-          {{ task.commentContent }}
+        <el-descriptions-item
+          v-if="isComment || isDm || isRenown"
+          :label="isRenown ? '申请说明' : isDm ? '私信内容' : '评论内容'"
+          :span="2"
+        >
+          {{ task.commentContent || task.reviewContent }}
         </el-descriptions-item>
         <el-descriptions-item label="命中通道" :span="2">
           <el-tag v-for="c in task.channels" :key="c.id" size="small" style="margin-right: 4px">

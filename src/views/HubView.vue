@@ -15,11 +15,13 @@ const businessLine = computed(() => (route.meta.businessLine as string) ?? 'arti
 const lineLabel = computed(() => {
   if (businessLine.value === 'comment') return '评论'
   if (businessLine.value === 'dm') return '私信'
+  if (businessLine.value === 'renown') return '名望升阶'
   return '文章'
 })
 const canArticle = computed(() => hasPermission('article:review:read'))
 const canComment = computed(() => hasPermission('article:comment:moderate'))
 const canDm = computed(() => hasPermission('article:review:read'))
+const canRenown = computed(() => hasPermission('renown:promotion:read'))
 
 function gradeTagType(grade: number) {
   if (grade >= 3) return 'danger'
@@ -31,6 +33,7 @@ function businessLineLabel(line: string | null) {
   if (line === 'article') return '文章'
   if (line === 'comment') return '评论'
   if (line === 'dm') return '私信'
+  if (line === 'renown') return '名望'
   return null
 }
 
@@ -63,6 +66,7 @@ function switchLine(target: string) {
   if (target === businessLine.value) return
   if (target === 'comment') router.push('/audit/comment')
   else if (target === 'dm') router.push('/audit/dm')
+  else if (target === 'renown') router.push('/audit/renown')
   else router.push('/audit/article')
 }
 
@@ -78,7 +82,7 @@ onMounted(load)
         <h3>{{ lineLabel }}审核</h3>
       </div>
       <div class="page-toolbar__actions">
-        <el-button-group v-if="canArticle || canComment || canDm">
+        <el-button-group v-if="canArticle || canComment || canDm || canRenown">
           <el-button
             v-if="canArticle"
             :type="businessLine === 'article' ? 'primary' : 'default'"
@@ -99,6 +103,13 @@ onMounted(load)
             @click="switchLine('dm')"
           >
             私信
+          </el-button>
+          <el-button
+            v-if="canRenown"
+            :type="businessLine === 'renown' ? 'primary' : 'default'"
+            @click="switchLine('renown')"
+          >
+            名望
           </el-button>
         </el-button-group>
         <el-button @click="goSearch">搜索</el-button>
