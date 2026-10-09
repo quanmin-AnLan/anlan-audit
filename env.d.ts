@@ -1,5 +1,6 @@
 /// <reference types="vite/client" />
 /// <reference types="element-plus/global" />
+/// <reference path="../anlan-base/shared/element-plus-imperative-modules.d.ts" />
 
 declare module '*.vue' {
   import type { DefineComponent } from 'vue'
