@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { auditApi, type ReviewTask } from '@/api/audit'
 import { getElMessage, getElMessageBox } from '@shared/child/element-plus'
@@ -10,6 +10,14 @@ const router = useRouter()
 const loading = ref(false)
 const list = ref<ReviewTask[]>([])
 const total = ref(0)
+const libraryArticles = ref<ReviewTask[]>([])
+const libraryComments = ref<ReviewTask[]>([])
+const libraryMessages = ref<ReviewTask[]>([])
+const libraryRows = computed(() => [
+  ...libraryArticles.value.map((item) => ({ ...item, kind: '文章' })),
+  ...libraryComments.value.map((item) => ({ ...item, kind: '评论' })),
+  ...libraryMessages.value.map((item) => ({ ...item, kind: '私信' })),
+])
 
 const query = reactive({
   articleId: '',
@@ -69,6 +77,9 @@ async function load() {
     })
     list.value = res.items
     total.value = res.total
+    libraryArticles.value = res.library?.articles ?? []
+    libraryComments.value = res.library?.comments ?? []
+    libraryMessages.value = res.library?.messages ?? []
   } finally {
     loading.value = false
   }
@@ -262,6 +273,44 @@ onMounted(load)
       </template>
     </MobileDataCards>
 
+    <section v-if="libraryRows.length" class="library">
+      <h4>库内记录</h4>
+      <p class="library-note">已入库的文章、评论和私信。不计入上方审核任务的分页。</p>
+      <div v-for="item in libraryRows" :key="item.id" class="inset-panel library-row">
+        <div class="library-main">
+          <span>{{ item.kind }} · {{ statusLabel[item.status] ?? item.status }}</span>
+          <el-button
+            v-if="item.sceneUrl"
+            link
+            type="primary"
+            @click="openAuditSceneUrl(item.sceneUrl)"
+          >
+            {{ sceneText(item) }}
+          </el-button>
+          <span v-else>{{ sceneText(item) }}</span>
+        </div>
+        <div class="library-note">{{ authorText(item) }} · {{ reviewText(item) }}</div>
+        <div>
+          <el-button
+            v-if="item.status === 'approved'"
+            link
+            type="danger"
+            @click="changeVerdict(item, 'reject')"
+          >
+            改判驳回
+          </el-button>
+          <el-button
+            v-if="item.status === 'rejected'"
+            link
+            type="success"
+            @click="changeVerdict(item, 'approve')"
+          >
+            改判通过
+          </el-button>
+        </div>
+      </div>
+    </section>
+
     <el-pagination
       v-if="total > query.pageSize"
       class="pager"
@@ -292,6 +341,31 @@ onMounted(load)
 .pager {
   margin-top: 16px;
   justify-content: flex-end;
+}
+
+.library {
+  margin-top: 20px;
+}
+
+.library h4 {
+  margin: 0 0 4px;
+}
+
+.library-note {
+  margin: 0 0 8px;
+  color: var(--anlan-text-secondary, $text-secondary);
+  font-size: 13px;
+}
+
+.library-row {
+  margin-bottom: 8px;
+}
+
+.library-main {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
 }
 
 .scene-link {

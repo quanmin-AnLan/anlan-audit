@@ -87,6 +87,15 @@ export interface ReviewTask {
     category: string
     rankOrder: number
   } | null
+  authorRoles?: Array<{
+    code: string
+    name: string
+    rankName: string
+    rankOrder: number
+    ministryCode: string | null
+    category: string
+  }>
+  authorRenown?: import('@shared/types').UserRenownPublic | null
   status: string
   hits: AuditHit[]
   submittedAt: string
@@ -149,10 +158,16 @@ export const auditApi = {
       total: number
       page: number
       pageSize: number
+      library?: {
+        articles: ReviewTask[]
+        comments: ReviewTask[]
+        messages: ReviewTask[]
+      }
     }>('/audit/search', { params }),
-  getDmConversation: (threadId: string) =>
+  getDmConversation: (threadId: string, before?: string) =>
     http.get<{
       sceneLabel: string
+      hasMore: boolean
       messages: Array<{
         id: string
         senderName: string
@@ -160,10 +175,13 @@ export const auditApi = {
         withdrawn: boolean
         createdAt: string
       }>
-    }>(`/audit/conversations/dm/${encodeURIComponent(threadId)}`),
-  getGroupConversation: (groupId: string) =>
+    }>(`/audit/conversations/dm/${encodeURIComponent(threadId)}`, {
+      params: before ? { before } : {},
+    }),
+  getGroupConversation: (groupId: string, before?: string) =>
     http.get<{
       sceneLabel: string
+      hasMore: boolean
       messages: Array<{
         id: string
         senderName: string
@@ -171,7 +189,9 @@ export const auditApi = {
         withdrawn: boolean
         createdAt: string
       }>
-    }>(`/audit/conversations/group/${encodeURIComponent(groupId)}`),
+    }>(`/audit/conversations/group/${encodeURIComponent(groupId)}`, {
+      params: before ? { before } : {},
+    }),
   changeVerdict: (taskId: string, action: 'approve' | 'reject', reason?: string) =>
     http.post(`/audit/tasks/${taskId}/verdict`, { action: action.toUpperCase(), reason }),
 

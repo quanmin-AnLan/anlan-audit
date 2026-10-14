@@ -3,7 +3,8 @@ import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { auditApi, type ReviewTask } from '@/api/audit'
 import { getElMessage, getElMessageBox } from '@shared/child/element-plus'
-import { formatDisplayTitleText, primaryRoleBadgeStyleFromRole } from '@shared/role-theme'
+import UserIdentityLine from '@shared/components/UserIdentityLine.vue'
+import { mapPeerRolesToUserRoleInfo } from '@shared/dm-peer-roles'
 
 const route = useRoute()
 const router = useRouter()
@@ -40,17 +41,7 @@ const backLineLabel = computed(() => {
   return '文章'
 })
 
-const authorTitleText = computed(() => {
-  const t = task.value
-  if (!t) return ''
-  const title = t.authorDisplayTitle ?? t.authorTitle
-  if (!title) return ''
-  return formatDisplayTitleText(title, t.authorDisplayRank)
-})
-
-const authorTitleBadgeStyle = computed(() =>
-  primaryRoleBadgeStyleFromRole(task.value?.authorPrimaryRole),
-)
+const authorRoles = computed(() => mapPeerRolesToUserRoleInfo(task.value?.authorRoles))
 
 const actionLabel: Record<string, string> = {
   approve: '通过',
@@ -195,12 +186,14 @@ onBeforeUnmount(clearLockTimer)
         <el-descriptions-item :label="isRenown ? '申请 ID' : isDm ? '消息 ID' : '文章 ID'">{{
           task.articleId
         }}</el-descriptions-item>
-        <el-descriptions-item label="作者">{{ task.authorName || '—' }}</el-descriptions-item>
-        <el-descriptions-item label="官职">
-          <span v-if="authorTitleText" class="title-badge" :style="authorTitleBadgeStyle">
-            {{ authorTitleText }}
-          </span>
-          <span v-else>—</span>
+        <el-descriptions-item label="作者" :span="2">
+          <UserIdentityLine
+            :name="task.authorName || '—'"
+            :roles="authorRoles"
+            :renown="task.authorRenown"
+            :omit-civilian="!task.authorName"
+            size="sm"
+          />
         </el-descriptions-item>
         <el-descriptions-item label="时间" :span="2">
           {{ task.contentAt ? new Date(task.contentAt).toLocaleString() : '—' }}
@@ -288,15 +281,6 @@ onBeforeUnmount(clearLockTimer)
     .snippet {
       color: var(--anlan-text-secondary, $text-secondary);
     }
-  }
-
-  .title-badge {
-    display: inline-block;
-    font-size: 12px;
-    padding: 2px 8px;
-    border-radius: 4px;
-    border: 1px solid;
-    line-height: 1.4;
   }
 
   .action-log {
