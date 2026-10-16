@@ -37,6 +37,20 @@ function businessLineLabel(line: string | null) {
   return null
 }
 
+function groupLineLabel(group: { businessLine: string | null; businessLines?: string[] }) {
+  const lines = group.businessLines?.length
+    ? group.businessLines
+    : group.businessLine
+      ? [group.businessLine]
+      : []
+  const names: string[] = []
+  for (const line of lines) {
+    const name = businessLineLabel(line)
+    if (name) names.push(name)
+  }
+  return names.join('、')
+}
+
 async function load() {
   loading.value = true
   try {
@@ -127,13 +141,8 @@ onMounted(load)
               L{{ group.grade }}
             </el-tag>
             <span class="group-name">{{ group.name }}</span>
-            <el-tag
-              v-if="businessLineLabel(group.businessLine)"
-              size="small"
-              type="info"
-              effect="plain"
-            >
-              {{ businessLineLabel(group.businessLine) }}
+            <el-tag v-if="groupLineLabel(group)" size="small" type="info" effect="plain">
+              {{ groupLineLabel(group) }}
             </el-tag>
           </div>
         </template>

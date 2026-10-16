@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { auditApi, type ReviewTask } from '@/api/audit'
 import { getElMessage, getElMessageBox } from '@shared/child/element-plus'
@@ -10,14 +10,6 @@ const router = useRouter()
 const loading = ref(false)
 const list = ref<ReviewTask[]>([])
 const total = ref(0)
-const libraryArticles = ref<ReviewTask[]>([])
-const libraryComments = ref<ReviewTask[]>([])
-const libraryMessages = ref<ReviewTask[]>([])
-const libraryRows = computed(() => [
-  ...libraryArticles.value.map((item) => ({ ...item, kind: '文章' })),
-  ...libraryComments.value.map((item) => ({ ...item, kind: '评论' })),
-  ...libraryMessages.value.map((item) => ({ ...item, kind: '私信' })),
-])
 
 const query = reactive({
   articleId: '',
@@ -77,9 +69,6 @@ async function load() {
     })
     list.value = res.items
     total.value = res.total
-    libraryArticles.value = res.library?.articles ?? []
-    libraryComments.value = res.library?.comments ?? []
-    libraryMessages.value = res.library?.messages ?? []
   } finally {
     loading.value = false
   }
@@ -104,16 +93,14 @@ function reset() {
 async function changeVerdict(row: ReviewTask, action: 'approve' | 'reject') {
   let reason: string | undefined
   if (action === 'reject') {
-    const { value } = await getElMessageBox().prompt('请填写驳回理由', '改判驳回', {
+    const { value } = await getElMessageBox().prompt('请填写驳回理由', '驳回', {
       confirmButtonText: '确认',
       inputPattern: /.+/,
       inputErrorMessage: '理由不能为空',
     })
     reason = value
-  } else if (row.status === 'rejected') {
-    await getElMessageBox().confirm('将该内容改判为通过？', '改判通过')
   } else {
-    return
+    await getElMessageBox().confirm('将该内容改为通过？', '通过')
   }
 
   await auditApi.changeVerdict(row.id, action, reason)
@@ -224,20 +211,20 @@ onMounted(load)
       <el-table-column label="操作" width="160" fixed="right">
         <template #default="{ row }">
           <el-button
-            v-if="(row as ReviewTask).status === 'approved'"
-            link
-            type="danger"
-            @click="changeVerdict(row as ReviewTask, 'reject')"
-          >
-            改判驳回
-          </el-button>
-          <el-button
-            v-if="(row as ReviewTask).status === 'rejected'"
+            v-if="(row as ReviewTask).status !== 'approved'"
             link
             type="success"
             @click="changeVerdict(row as ReviewTask, 'approve')"
           >
-            改判通过
+            通过
+          </el-button>
+          <el-button
+            v-if="(row as ReviewTask).status !== 'rejected'"
+            link
+            type="danger"
+            @click="changeVerdict(row as ReviewTask, 'reject')"
+          >
+            驳回
           </el-button>
         </template>
       </el-table-column>
@@ -255,61 +242,23 @@ onMounted(load)
       </template>
       <template #actions="{ item }">
         <el-button
-          v-if="item.status === 'approved'"
-          size="small"
-          type="danger"
-          @click="changeVerdict(item as ReviewTask, 'reject')"
-        >
-          改判驳回
-        </el-button>
-        <el-button
-          v-if="item.status === 'rejected'"
+          v-if="item.status !== 'approved'"
           size="small"
           type="success"
           @click="changeVerdict(item as ReviewTask, 'approve')"
         >
-          改判通过
+          通过
+        </el-button>
+        <el-button
+          v-if="item.status !== 'rejected'"
+          size="small"
+          type="danger"
+          @click="changeVerdict(item as ReviewTask, 'reject')"
+        >
+          驳回
         </el-button>
       </template>
     </MobileDataCards>
-
-    <section v-if="libraryRows.length" class="library">
-      <h4>库内记录</h4>
-      <p class="library-note">已入库的文章、评论和私信。不计入上方审核任务的分页。</p>
-      <div v-for="item in libraryRows" :key="item.id" class="inset-panel library-row">
-        <div class="library-main">
-          <span>{{ item.kind }} · {{ statusLabel[item.status] ?? item.status }}</span>
-          <el-button
-            v-if="item.sceneUrl"
-            link
-            type="primary"
-            @click="openAuditSceneUrl(item.sceneUrl)"
-          >
-            {{ sceneText(item) }}
-          </el-button>
-          <span v-else>{{ sceneText(item) }}</span>
-        </div>
-        <div class="library-note">{{ authorText(item) }} · {{ reviewText(item) }}</div>
-        <div>
-          <el-button
-            v-if="item.status === 'approved'"
-            link
-            type="danger"
-            @click="changeVerdict(item, 'reject')"
-          >
-            改判驳回
-          </el-button>
-          <el-button
-            v-if="item.status === 'rejected'"
-            link
-            type="success"
-            @click="changeVerdict(item, 'approve')"
-          >
-            改判通过
-          </el-button>
-        </div>
-      </div>
-    </section>
 
     <el-pagination
       v-if="total > query.pageSize"
@@ -343,31 +292,6 @@ onMounted(load)
   justify-content: flex-end;
 }
 
-.library {
-  margin-top: 20px;
-}
-
-.library h4 {
-  margin: 0 0 4px;
-}
-
-.library-note {
-  margin: 0 0 8px;
-  color: var(--anlan-text-secondary, $text-secondary);
-  font-size: 13px;
-}
-
-.library-row {
-  margin-bottom: 8px;
-}
-
-.library-main {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
-}
-
 .scene-link {
   max-width: 100%;
   overflow: hidden;
@@ -376,6 +300,6 @@ onMounted(load)
 
 .review-snippet {
   font-size: 13px;
-  color: $text-secondary;
+  color: var(--anlan-text-secondary, $text-secondary);
 }
 </style>

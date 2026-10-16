@@ -41,6 +41,7 @@ export interface HubGroup {
   name: string
   grade: number
   businessLine: string | null
+  businessLines?: string[]
   channels: HubChannel[]
 }
 

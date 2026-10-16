@@ -355,9 +355,10 @@ onMounted(load)
 <style scoped lang="scss">
 .channel-tree__group {
   margin-bottom: 12px;
-  border: 1px solid $border-color-light;
+  border: 1px solid var(--anlan-border, $border-color);
   border-radius: 8px;
   overflow: hidden;
+  background: var(--anlan-surface);
 }
 
 .channel-tree__primary {
@@ -366,7 +367,8 @@ onMounted(load)
   align-items: center;
   gap: 8px;
   padding: 10px 12px;
-  background: $bg-color;
+  background: var(--anlan-surface-muted);
+  color: var(--anlan-text, $text-primary);
   cursor: pointer;
   user-select: none;
 }
@@ -374,7 +376,7 @@ onMounted(load)
 .channel-tree__caret {
   display: inline-block;
   transition: transform 0.15s ease;
-  color: $text-secondary;
+  color: var(--anlan-text-secondary, $text-secondary);
 
   &.is-expanded {
     transform: rotate(90deg);
@@ -383,17 +385,28 @@ onMounted(load)
 
 .channel-tree__primary-name {
   font-weight: 600;
-  color: $text-primary;
+  color: var(--anlan-text, $text-primary);
 }
 
 .channel-tree__meta,
 .channel-tree__code {
   font-size: 12px;
-  color: $text-secondary;
+  color: var(--anlan-text-secondary, $text-secondary);
 }
 
 .channel-tree__secondary-table {
   margin: 0;
+  --el-table-header-bg-color: var(--anlan-surface-muted);
+  --el-table-header-text-color: var(--anlan-text, $text-primary);
+  --el-table-bg-color: var(--anlan-surface);
+  --el-table-tr-bg-color: var(--anlan-surface);
+  --el-table-text-color: var(--anlan-text, $text-primary);
+  --el-table-border-color: var(--anlan-border, $border-color);
+
+  :deep(th.el-table__cell) {
+    background-color: var(--anlan-surface-muted);
+    color: var(--anlan-text, $text-primary);
+  }
 }
 
 .field-hint {
